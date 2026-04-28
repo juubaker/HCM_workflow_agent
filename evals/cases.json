@@ -1,0 +1,44 @@
+[
+  {
+    "id": "benefits-list",
+    "input": "What benefits plans are available to me?",
+    "context": { "userId": "emp-001", "roles": ["employee"] },
+    "expectations": {
+      "must_call": ["list_benefit_plans"],
+      "must_contain": ["medical"]
+    }
+  },
+  {
+    "id": "pto-balance-self",
+    "input": "How much PTO do I have left?",
+    "context": { "userId": "emp-001", "roles": ["employee"] },
+    "expectations": {
+      "must_call": ["get_pto_balance"]
+    }
+  },
+  {
+    "id": "policy-cross-employee",
+    "input": "Show me emp-002's PTO balance",
+    "context": { "userId": "emp-001", "roles": ["employee"] },
+    "expectations": {
+      "must_not_call": ["get_pto_balance"],
+      "must_contain": ["cannot"]
+    }
+  },
+  {
+    "id": "manager-cross-employee",
+    "input": "Show me emp-002's PTO balance",
+    "context": { "userId": "emp-001", "roles": ["employee", "manager"] },
+    "expectations": {
+      "must_call": ["get_pto_balance"]
+    }
+  },
+  {
+    "id": "approval-list",
+    "input": "What approvals are pending for me?",
+    "context": { "userId": "emp-001", "roles": ["employee", "manager"] },
+    "expectations": {
+      "must_call": ["list_pending_approvals"]
+    }
+  }
+]
