@@ -132,11 +132,12 @@ cp .env.example .env       # add your ANTHROPIC_API_KEY
 
 npm run dev                # interactive CLI
 npm run server             # REST API on :3000
+npm run web                # Operator Console dashboard on :5173 (requires server)
 npm run eval               # run behavioral evals
 npm test                   # run unit tests
 ```
 
-Requirements: Node.js 20+, an Anthropic API key.
+Requirements: Node.js 20+, an Anthropic API key. The dashboard is a separate Vite + React app under `web/` — install its deps with `npm run web:install` if you skipped the workspace `npm install`.
 
 ### Open in VS Code
 

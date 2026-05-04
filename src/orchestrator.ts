@@ -2,8 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "node:crypto";
 import { ToolRegistry } from "./tools/registry.js";
 import { PolicyEngine } from "./policy/engine.js";
-import { AuditLogger } from "./observability/audit.js";
-import { trace } from "./observability/metrics.js";
+import { AuditLogger, AuditEvent } from "./observability/audit.js";
 import { AgentContext, AgentResult } from "./types.js";
 import { buildSystemPrompt } from "./prompts.js";
 
@@ -22,6 +21,10 @@ export interface OrchestratorOptions {
  *   1. Every tool call passes through the policy engine first.
  *   2. Cost and iteration counts are bounded.
  *   3. Every action and decision is recorded to the audit log.
+ *
+ * Events emitted: agent.start, llm.call, tool.invoked, tool.error,
+ * policy.denied, agent.end, agent.budget_exceeded, agent.iteration_limit.
+ * Each event carries durationMs where applicable for downstream metrics.
  */
 export class Orchestrator {
   private readonly client: Anthropic;
@@ -57,32 +60,52 @@ export class Orchestrator {
     let totalCostUsd = 0;
     let iterations = 0;
 
-    await this.audit.log({
+    // Capture events for return value alongside the audit log.
+    const events: AuditEvent[] = [];
+    const emit = async (event: AuditEvent): Promise<void> => {
+      const stamped = { ...event, timestamp: event.timestamp ?? new Date().toISOString() };
+      events.push(stamped);
+      await this.audit.log(stamped);
+    };
+
+    await emit({
       traceId,
       type: "agent.start",
       actor: ctx.userId,
-      payload: { input, roles: ctx.roles },
+      payload: { input, roles: ctx.roles, model: this.model },
     });
 
     while (iterations < this.maxIterations) {
       iterations++;
 
-      const response = await trace(
-        "llm.call",
-        { traceId, iter: iterations },
-        () =>
-          this.client.messages.create({
-            model: this.model,
-            max_tokens: 4096,
-            system: buildSystemPrompt(ctx),
-            tools: toolDefs,
-            messages,
-          })
-      );
+      const llmStart = Date.now();
+      const response = await this.client.messages.create({
+        model: this.model,
+        max_tokens: 4096,
+        system: buildSystemPrompt(ctx),
+        tools: toolDefs,
+        messages,
+      });
+      const llmDuration = Date.now() - llmStart;
+      const callCost = estimateCost(this.model, response.usage);
+      totalCostUsd += callCost;
 
-      totalCostUsd += estimateCost(this.model, response.usage);
+      await emit({
+        traceId,
+        type: "llm.call",
+        payload: {
+          iteration: iterations,
+          model: this.model,
+          inputTokens: response.usage?.input_tokens ?? 0,
+          outputTokens: response.usage?.output_tokens ?? 0,
+          costUsd: callCost,
+          durationMs: llmDuration,
+          stopReason: response.stop_reason,
+        },
+      });
+
       if (totalCostUsd > this.maxCostUsd) {
-        await this.audit.log({
+        await emit({
           traceId,
           type: "agent.budget_exceeded",
           payload: { totalCostUsd, limit: this.maxCostUsd },
@@ -94,6 +117,7 @@ export class Orchestrator {
           costUsd: totalCostUsd,
           iterations,
           messages,
+          events,
         };
       }
 
@@ -104,7 +128,7 @@ export class Orchestrator {
           .filter((b): b is Anthropic.TextBlock => b.type === "text")
           .map((b) => b.text)
           .join("");
-        await this.audit.log({
+        await emit({
           traceId,
           type: "agent.end",
           payload: { iterations, costUsd: totalCostUsd },
@@ -116,6 +140,7 @@ export class Orchestrator {
           costUsd: totalCostUsd,
           iterations,
           messages,
+          events,
         };
       }
 
@@ -127,6 +152,7 @@ export class Orchestrator {
           costUsd: totalCostUsd,
           iterations,
           messages,
+          events,
         };
       }
 
@@ -143,7 +169,7 @@ export class Orchestrator {
         });
 
         if (!policyResult.allowed) {
-          await this.audit.log({
+          await emit({
             traceId,
             type: "policy.denied",
             actor: ctx.userId,
@@ -162,17 +188,20 @@ export class Orchestrator {
           continue;
         }
 
+        const toolStart = Date.now();
         try {
-          const output = await trace(
-            `tool.${call.name}`,
-            { traceId },
-            () => this.tools.invoke(call.name, call.input, ctx)
-          );
-          await this.audit.log({
+          const output = await this.tools.invoke(call.name, call.input, ctx);
+          const toolDuration = Date.now() - toolStart;
+          await emit({
             traceId,
             type: "tool.invoked",
             actor: ctx.userId,
-            payload: { tool: call.name, input: call.input, output },
+            payload: {
+              tool: call.name,
+              input: call.input,
+              output,
+              durationMs: toolDuration,
+            },
           });
           results.push({
             type: "tool_result",
@@ -181,12 +210,17 @@ export class Orchestrator {
               typeof output === "string" ? output : JSON.stringify(output),
           });
         } catch (e) {
+          const toolDuration = Date.now() - toolStart;
           const message = e instanceof Error ? e.message : String(e);
-          await this.audit.log({
+          await emit({
             traceId,
             type: "tool.error",
             actor: ctx.userId,
-            payload: { tool: call.name, error: message },
+            payload: {
+              tool: call.name,
+              error: message,
+              durationMs: toolDuration,
+            },
           });
           results.push({
             type: "tool_result",
@@ -200,7 +234,7 @@ export class Orchestrator {
       messages.push({ role: "user", content: results });
     }
 
-    await this.audit.log({
+    await emit({
       traceId,
       type: "agent.iteration_limit",
       payload: { iterations: this.maxIterations },
@@ -212,6 +246,7 @@ export class Orchestrator {
       costUsd: totalCostUsd,
       iterations,
       messages,
+      events,
     };
   }
 }
@@ -220,7 +255,7 @@ export class Orchestrator {
  * Rough cost estimate. Replace with a per-model pricing table loaded from
  * config in production. These numbers are placeholders.
  */
-function estimateCost(model: string, usage?: Anthropic.Usage): number {
+function estimateCost(_model: string, usage?: Anthropic.Usage): number {
   if (!usage) return 0;
   const inputPer1M = 3.0;
   const outputPer1M = 15.0;

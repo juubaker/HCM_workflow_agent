@@ -10,14 +10,19 @@
     "server": "tsx src/server.ts",
     "eval": "tsx evals/runner.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "web": "npm --prefix web run dev",
+    "web:install": "npm --prefix web install",
+    "web:build": "npm --prefix web run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",

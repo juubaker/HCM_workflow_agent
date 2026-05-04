@@ -39,6 +39,7 @@ describe("Orchestrator", () => {
     expect(result.iterations).toBe(1);
     expect(audit.events.map((e) => e.type)).toEqual([
       "agent.start",
+      "llm.call",
       "agent.end",
     ]);
   });

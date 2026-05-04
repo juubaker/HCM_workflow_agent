@@ -1,4 +1,5 @@
 import type { MessageParam } from "@anthropic-ai/sdk/resources/messages.js";
+import type { AuditEvent } from "./observability/audit.js";
 
 /**
  * Identity and roles passed through every layer of the agent.
@@ -26,4 +27,6 @@ export interface AgentResult {
   iterations: number;
   /** Full message history after the run, suitable for threading into the next run() call. */
   messages: MessageParam[];
+  /** All audit events emitted during this run, in order. Used by UIs and tests. */
+  events: AuditEvent[];
 }
