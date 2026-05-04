@@ -1,0 +1,30 @@
+{
+  "name": "enterprise-workflow-agent",
+  "version": "0.1.0",
+  "description": "Production-grade enterprise HCM workflow agent with policy engine, tool registry, and full audit trail",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/src/index.js",
+    "server": "tsx src/server.ts",
+    "eval": "tsx evals/runner.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

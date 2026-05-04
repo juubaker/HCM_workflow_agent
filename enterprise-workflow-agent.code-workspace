@@ -1,0 +1,122 @@
+{
+  "folders": [
+    {
+      "name": "Enterprise Workflow Agent",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/audit.log": true
+    },
+    "vitest.enable": true,
+    "vitest.commandLine": "npx vitest"
+  },
+  "extensions": {
+    "recommendations": [
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "vitest.explorer"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Agent CLI",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "dev"],
+        "cwd": "${workspaceFolder:Enterprise Workflow Agent}",
+        "skipFiles": ["<node_internals>/**"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Run Server",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "server"],
+        "cwd": "${workspaceFolder:Enterprise Workflow Agent}",
+        "skipFiles": ["<node_internals>/**"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Run Evals",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "eval"],
+        "cwd": "${workspaceFolder:Enterprise Workflow Agent}",
+        "skipFiles": ["<node_internals>/**"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Run All Tests",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["test"],
+        "cwd": "${workspaceFolder:Enterprise Workflow Agent}",
+        "skipFiles": ["<node_internals>/**"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Debug Current Test File",
+        "type": "node",
+        "request": "launch",
+        "autoAttachChildProcesses": true,
+        "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+        "program": "${workspaceFolder:Enterprise Workflow Agent}/node_modules/vitest/vitest.mjs",
+        "args": ["run", "${relativeFile}"],
+        "cwd": "${workspaceFolder:Enterprise Workflow Agent}",
+        "smartStep": true,
+        "console": "integratedTerminal"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Install dependencies",
+        "type": "shell",
+        "command": "npm install",
+        "problemMatcher": []
+      },
+      {
+        "label": "Build",
+        "type": "shell",
+        "command": "npm run build",
+        "group": "build",
+        "problemMatcher": ["$tsc"]
+      },
+      {
+        "label": "Test",
+        "type": "shell",
+        "command": "npm test",
+        "group": { "kind": "test", "isDefault": true },
+        "problemMatcher": []
+      },
+      {
+        "label": "Test (watch)",
+        "type": "shell",
+        "command": "npm run test:watch",
+        "isBackground": true,
+        "problemMatcher": []
+      }
+    ]
+  }
+}
