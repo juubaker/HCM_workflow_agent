@@ -172,6 +172,7 @@ The Vitest extension exposes every test in the **Testing** panel — click ▶ t
 enterprise-workflow-agent/
 ├── README.md                              ← you are here
 ├── ARCHITECTURE.md                        Detailed design walkthrough
+├── CONTRIBUTING.md                        Dev setup and conventions
 ├── LICENSE
 ├── package.json
 ├── tsconfig.json
@@ -183,6 +184,18 @@ enterprise-workflow-agent/
 │   ├── launch.json                        Run/debug configurations
 │   ├── settings.json                      Editor settings
 │   └── extensions.json                    Recommended extensions
+├── docs/
+│   ├── README.md                          Docs index
+│   ├── api.md                             HTTP API reference
+│   ├── deployment.md                      Production hardening guide
+│   ├── adding-a-tool.md                   How to add a new tool
+│   ├── adding-a-policy-rule.md            How to add a new policy rule
+│   └── adr/                               Architecture Decision Records
+│       ├── README.md
+│       ├── 0001-policy-engine-as-central-gate.md
+│       ├── 0002-cost-and-iteration-budgets.md
+│       ├── 0003-hcm-client-as-interface.md
+│       └── 0004-evals-alongside-tests.md
 ├── src/
 │   ├── index.ts                           CLI entry (REPL)
 │   ├── server.ts                          Express HTTP server
@@ -365,6 +378,21 @@ Errors that are *expected* (budget exhausted, iteration cap hit, policy denial) 
 | HTTP | Express | Boring, widely understood, easy to wrap with real middleware |
 | Tests | Vitest | Fast, TypeScript-native, integrates cleanly with VS Code |
 | Bundler | tsx (dev) / tsc (build) | Zero-config dev loop, standard TS compilation for prod |
+
+## Documentation
+
+| Doc | Purpose |
+| --- | --- |
+| [`README.md`](./README.md) | This file — overview, quickstart, design tradeoffs |
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | System architecture and request lifecycle |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Development setup and conventions |
+| [`docs/api.md`](./docs/api.md) | HTTP API reference |
+| [`docs/deployment.md`](./docs/deployment.md) | Production hardening guide |
+| [`docs/adding-a-tool.md`](./docs/adding-a-tool.md) | How to add a new tool, end to end |
+| [`docs/adding-a-policy-rule.md`](./docs/adding-a-policy-rule.md) | How to extend the policy engine |
+| [`docs/adr/`](./docs/adr/) | Architecture Decision Records — the *why* behind the choices |
+| [`tests/README.md`](./tests/README.md) | Test suite overview |
+| [`evals/README.md`](./evals/README.md) | Eval harness docs |
 
 ## Production hardening checklist
 
